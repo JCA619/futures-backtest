@@ -1,0 +1,4 @@
+data/NQ_daily.csv
+data/NQ_hourly.csv
+__pycache__/
+.DS_Store
