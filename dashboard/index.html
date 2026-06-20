@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASDAQ Futures FVG Inversion Backtester</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="logo-text">
+                    <h1>Antigravity Quantum</h1>
+                    <span>Futures Backtest Suite</span>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="control-group">
+                    <label for="timeframe-select"><i class="fa-regular fa-clock"></i> Timeframe</label>
+                    <select id="timeframe-select">
+                        <option value="hourly">Hourly (2-Year Intraday)</option>
+                        <option value="daily">Daily (5-Year Swing)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="size-select"><i class="fa-solid fa-compress"></i> FVG Min Size</label>
+                    <select id="size-select">
+                        <!-- Options will be populated dynamically based on timeframe -->
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="rr-select"><i class="fa-solid fa-scale-balanced"></i> Risk:Reward</label>
+                    <select id="rr-select">
+                        <option value="1.5">1:1.5 RR</option>
+                        <option value="2.0" selected>1:2.0 RR</option>
+                        <option value="3.0">1:3.0 RR</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-main">
+            <!-- Optimal Trading Window Banner -->
+            <section class="optimal-banner-card glass-panel">
+                <div class="optimal-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="optimal-details">
+                    <h3>Optimal Trading Configuration Identified</h3>
+                    <p>Based on historical FVG Inversion hit-rates, the best trading performance occurs during:</p>
+                    <div class="optimal-badges">
+                        <span class="badge highlight"><i class="fa-solid fa-calendar-day"></i> Session: <strong id="best-session-val">-</strong></span>
+                        <span class="badge highlight"><i class="fa-solid fa-clock"></i> Hour: <strong id="best-hour-val">-</strong></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metrics Summary Grid -->
+            <section class="metrics-grid">
+                <div class="metric-card glass-panel">
+                    <div class="card-icon blue"><i class="fa-solid fa-handshake"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Total Trades</span>
+                        <h2 id="stat-total-trades">-</h2>
+                    </div>
+                </div>
+                
+                <div class="metric-card glass-panel">
+                    <div class="card-icon green"><i class="fa-solid fa-percent"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Win Rate</span>
+                        <h2 id="stat-win-rate">-</h2>
+                    </div>
+                </div>
+                
+                <div class="metric-card glass-panel">
+                    <div class="card-icon purple"><i class="fa-solid fa-coins"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Net Profit (Pts)</span>
+                        <h2 id="stat-net-profit">-</h2>
+                    </div>
+                </div>
+                
+                <div class="metric-card glass-panel">
+                    <div class="card-icon gold"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Profit Factor</span>
+                        <h2 id="stat-profit-factor">-</h2>
+                    </div>
+                </div>
+
+                <div class="metric-card glass-panel">
+                    <div class="card-icon orange"><i class="fa-solid fa-chart-line-down"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Max Drawdown</span>
+                        <h2 id="stat-max-drawdown">-</h2>
+                    </div>
+                </div>
+
+                <div class="metric-card glass-panel">
+                    <div class="card-icon cyan"><i class="fa-solid fa-arrows-up-down"></i></div>
+                    <div class="card-info">
+                        <span class="card-label">Avg Win / Avg Loss</span>
+                        <h2 id="stat-avg-ratio">-</h2>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-grid">
+                <!-- Equity Curve Chart -->
+                <div class="chart-card glass-panel col-span-2">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-chart-area"></i> Cumulative PnL Equity Curve</h3>
+                        <span class="chart-subtitle">Historical growth in points</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="equityChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Hourly Performance Chart -->
+                <div class="chart-card glass-panel">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-business-time"></i> Performance by Hour of Day (New York Time)</h3>
+                        <span class="chart-subtitle">Net Profit (Bars) vs Win Rate (Line)</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Session Performance Chart -->
+                <div class="chart-card glass-panel">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-globe"></i> Performance by Session</h3>
+                        <span class="chart-subtitle">Profitability across global sessions</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="sessionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Detailed Trade Log Table -->
+            <section class="trade-log-section glass-panel">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h3><i class="fa-solid fa-list"></i> Historical Trade Log</h3>
+                        <span id="log-count">Showing 0 trades</span>
+                    </div>
+                    <div class="table-filters">
+                        <input type="text" id="table-search" placeholder="Search by date/price...">
+                        <select id="filter-direction">
+                            <option value="all">All Directions</option>
+                            <option value="long">Long</option>
+                            <option value="short">Short</option>
+                        </select>
+                        <select id="filter-result">
+                            <option value="all">All Results</option>
+                            <option value="win">Wins</option>
+                            <option value="loss">Losses</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="trades-table">
+                        <thead>
+                            <tr>
+                                <th>FVG Time</th>
+                                <th>Inversion Time (Entry)</th>
+                                <th>Direction</th>
+                                <th>Entry Price</th>
+                                <th>Stop Loss</th>
+                                <th>Take Profit</th>
+                                <th>Exit Price</th>
+                                <th>Exit Reason</th>
+                                <th>PnL (Pts)</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-table-body">
+                            <!-- Table rows populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-pagination">
+                    <button id="btn-prev" class="btn-pagination" disabled><i class="fa-solid fa-angle-left"></i> Previous</button>
+                    <span id="page-indicator">Page 1 of 1</span>
+                    <button id="btn-next" class="btn-pagination" disabled>Next <i class="fa-solid fa-angle-right"></i></button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script loading -->
+    <script src="app.js"></script>
+</body>
+</html>
